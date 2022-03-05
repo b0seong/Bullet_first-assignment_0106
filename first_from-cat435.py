@@ -55,9 +55,12 @@ length_r = np.array([])
 loc_start = np.empty((0,2))
 loc_end = np.empty((0,2))
 
-for i in range(200):
-    for j in range(200):
-        ind = np.where( (25*i<ycen) & (ycen<25*(i+1)) & (35*j<xcen) & (xcen<35*(j+1)) )     # 20by20 각 셀의 indexing
+dim2_array_r1 = np.zeros((20,20))   # 여기서 바로 mass map 그리는데 필요한 2차원 상의 gamma값 그려보려고 추가함.
+dim2_array_r2 = np.zeros((20,20))   
+
+for i in range(20):
+    for j in range(20):
+        ind = np.where( (255*i<ycen) & (ycen<255*(i+1)) & (350*j<xcen) & (xcen<350*(j+1)) )     # 20by20 각 셀의 indexing
         # 현재 cat의 number는 4474개
 
         r1_mean = 1e3*np.mean(r1[ind])                                                              # 각 셀에서의 gamma1과 gamma2의 평균(대표로 쓸 값)
@@ -65,13 +68,16 @@ for i in range(200):
         r1_mean_list = np.append(r1_mean_list, r1_mean)
         r2_mean_list = np.append(r2_mean_list, r2_mean)
 
-        center = np.array([355*j+355/2, 255*i+255/2], dtype='float64').reshape(1,2)             # 20by20의 각 셀의 중심 좌표
+        center = np.array([350*j+350/2, 255*i+255/2], dtype='float64').reshape(1,2)             # 20by20의 각 셀의 중심 좌표
         loc_start = np.append(loc_start, center, axis=0)
         
         stick_end = np.array([center[0][0]+r1_mean, center[0][1]+r2_mean]).reshape(1,2)
         loc_end = np.append(loc_end, stick_end, axis=0)                                               # 20by20의 각 셀에 해당하는 whisker plot의 끝 점 좌표
 
-background = np.zeros((5100,7013))
+        dim2_array_r1[i][j] += r1_mean/1e3      # 여기서 바로 mass map 그리는데 필요한 2차원 상의 gamma값 그려보려고 추가함.
+        dim2_array_r2[i][j] += r2_mean/1e3
+
+background = np.zeros((5100,7013))   # 행이 y뜻함
 
 fig = plt.figure(figsize=(5,5))
 plt.imshow(background, cmap='gray', origin = 'lower')
@@ -81,22 +87,25 @@ plt.xlabel("X (pixels)")
 plt.ylabel("Y (pixels)")
 plt.show()
 
-#-----mass distribution map(=kapp map)
+#-----mass distribution map(=kappa map)
 
-x = np.linspace(0,5099,100)
-y = np.linspace(0,7012,150)
+print(dim2_array_r1)
+ind = np.where(np.isnan(dim2_array_r1))
+dim2_array_r1[ind]=0
+print(dim2_array_r1)
 
-R1_fft = fft.fft2(r1_mean_list)
-R2_fft = fft.fft2(r2_mean_list)
 
-k1 = fft.fftfreq(R1_fft.shape[1], d=1)
-k2 = fft.fftfreq(R2_fft.shape[0], d=1)
+R1_fft = fft.fft2(dim2_array_r1)
+R2_fft = fft.fft2(dim2_array_r2)
+
+k1 = fft.fftfreq(R1_fft.shape[1], d=350)
+k2 = fft.fftfreq(R2_fft.shape[0], d=255)
 
 #####k = ( k1**2 + k2**2 )**(1/2) #이것도 놓쳤네.. meshgrid 써야만한다. 라인바이라인으로 점검 꼼꼼히 하면서 넘어가자.
 K1, K2 = np.meshgrid(k1,k2)
 
 #####K = ( K1**2 + K2**2 )**(1/2) #Kappa_fft 구할때 작은 수 곱해주는 것이 아니라 여기서 작은 수 '더해주는 것'이다.
-K = ( K1**2 + K2**2 )**(1/2) + 1e-5
+K = ( K1**2 + K2**2 )**(1/2) + 1e-7
 
 # print(r1_fft.shape[0]==len(x)) ### 주의! array의 인덱스는 행과 열 순서이므로 x,y 순이 아니다. y,x 순이다!
 # print(r1_fft.shape[1]==len(y)) ### 주의! array의 인덱스는 행과 열 순서이므로 x,y 순이 아니다. y,x 순이다!
@@ -108,6 +117,8 @@ Kappa_fft = K**(-2) * ( (K1**2-K2**2)*R1_fft + 2*K1*K2*R2_fft )
 Kappa = fft.ifft2(Kappa_fft)
 
 Kappa_power = np.abs(Kappa)
+
+print(Kappa)
 
 plt.imshow(Kappa_power, origin='lower')
 plt.show()
