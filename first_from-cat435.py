@@ -92,14 +92,28 @@ plt.show()
 print(dim2_array_r1)
 ind = np.where(np.isnan(dim2_array_r1))
 dim2_array_r1[ind]=0
+print("=================dim2_array_r1=======================")
 print(dim2_array_r1)
 
 
+ind2 = np.where(np.isnan(dim2_array_r2))
+dim2_array_r2[ind]=0
+
+
 R1_fft = fft.fft2(dim2_array_r1)
+print("=================R1_fft=======================")
+print(R1_fft)
 R2_fft = fft.fft2(dim2_array_r2)
+print("=================R2_fft=======================")
+print(R2_fft)
 
 k1 = fft.fftfreq(R1_fft.shape[1], d=350)
 k2 = fft.fftfreq(R2_fft.shape[0], d=255)
+print("=================k1=======================")
+print(k1)
+print("=================k2=======================")
+print(k2)
+
 
 #####k = ( k1**2 + k2**2 )**(1/2) #이것도 놓쳤네.. meshgrid 써야만한다. 라인바이라인으로 점검 꼼꼼히 하면서 넘어가자.
 K1, K2 = np.meshgrid(k1,k2)
@@ -114,11 +128,18 @@ K = ( K1**2 + K2**2 )**(1/2) + 1e-7
 
 Kappa_fft = K**(-2) * ( (K1**2-K2**2)*R1_fft + 2*K1*K2*R2_fft )
 
+print("=================Kappa_fft=======================")
+print(Kappa_fft)
+
+
 Kappa = fft.ifft2(Kappa_fft)
+
 
 Kappa_power = np.abs(Kappa)
 
+print("=================Kappa======================")
 print(Kappa)
+
 
 plt.imshow(Kappa_power, origin='lower')
 plt.show()
